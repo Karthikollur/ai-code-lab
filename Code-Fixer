@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeFixer - AI-Powered Code Correction</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .code-container {
+            transition: all 0.3s ease;
+        }
+        .code-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .language-selector {
+            background-color: #2d3748;
+            color: white;
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+        }
+        .copy-btn {
+            transition: all 0.2s ease;
+        }
+        .copy-btn:hover {
+            background-color: #4299e1;
+        }
+        .copy-btn.copied {
+            background-color: #48bb78;
+        }
+        .tab-active {
+            border-bottom: 3px solid #4299e1;
+            color: #4299e1;
+            font-weight: 600;
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(66, 153, 225, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(66, 153, 225, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(66, 153, 225, 0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-2">
+                <span class="text-blue-500">Code</span><span class="text-gray-700">Fixer</span>
+            </h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                Paste your code snippet or error message below and get AI-powered corrections instantly.
+            </p>
+        </header>
+
+        <!-- Main Content -->
+        <div class="max-w-4xl mx-auto">
+            <!-- Input Section -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8 code-container">
+                <div class="language-selector px-4 py-2 flex justify-between items-center">
+                    <select id="language-select" class="bg-gray-800 text-white px-3 py-1 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="auto">Auto-detect</option>
+                        <option value="javascript">JavaScript</option>
+                        <option value="python">Python</option>
+                        <option value="java">Java</option>
+                        <option value="csharp">C#</option>
+                        <option value="php">PHP</option>
+                        <option value="cpp">C++</option>
+                        <option value="ruby">Ruby</option>
+                        <option value="go">Go</option>
+                        <option value="rust">Rust</option>
+                    </select>
+                    <div class="text-sm text-gray-300">
+                        <i class="fas fa-code mr-1"></i> Code Input
+                    </div>
+                </div>
+                <div class="p-4">
+                    <textarea id="code-input" class="w-full h-64 p-4 font-mono text-sm bg-gray-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Paste your code or error message here..."></textarea>
+                </div>
+                <div class="px-4 py-3 bg-gray-50 flex justify-between items-center">
+                    <div class="text-sm text-gray-500">
+                        <span id="char-count">0</span> characters
+                    </div>
+                    <button id="analyze-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md font-medium transition-colors flex items-center pulse-animation">
+                        <i class="fas fa-magic mr-2"></i> Analyze & Fix
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results-section" class="hidden">
+                <!-- Tabs -->
+                <div class="flex border-b border-gray-200 mb-6">
+                    <button class="tab-btn px-4 py-2 text-gray-600 hover:text-blue-500 transition-colors tab-active" data-tab="fixed-code">
+                        <i class="fas fa-check-circle mr-2"></i> Fixed Code
+                    </button>
+                    <button class="tab-btn px-4 py-2 text-gray-600 hover:text-blue-500 transition-colors" data-tab="explanation">
+                        <i class="fas fa-lightbulb mr-2"></i> Explanation
+                    </button>
+                    <button class="tab-btn px-4 py-2 text-gray-600 hover:text-blue-500 transition-colors" data-tab="original">
+                        <i class="fas fa-code mr-2"></i> Original
+                    </button>
+                </div>
+
+                <!-- Tab Content -->
+                <div id="fixed-code" class="tab-content">
+                    <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8 code-container">
+                        <div class="language-selector px-4 py-2 flex justify-between items-center">
+                            <div class="text-sm text-gray-300">
+                                <i class="fas fa-check-circle mr-1"></i> Corrected Code
+                            </div>
+                            <button class="copy-btn bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-1 rounded-md transition-colors" data-target="fixed-code-content">
+                                <i class="fas fa-copy mr-1"></i> Copy
+                            </button>
+                        </div>
+                        <pre id="fixed-code-content" class="p-4 bg-gray-800 text-gray-100 font-mono text-sm overflow-x-auto rounded-b-lg"></pre>
+                    </div>
+                </div>
+
+                <div id="explanation" class="tab-content hidden">
+                    <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8 p-6">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                            <i class="fas fa-lightbulb text-yellow-500 mr-2"></i> What was wrong and how we fixed it
+                        </h3>
+                        <div id="explanation-content" class="text-gray-700">
+                            <!-- Explanation will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div id="original" class="tab-content hidden">
+                    <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8 code-container">
+                        <div class="language-selector px-4 py-2 flex justify-between items-center">
+                            <div class="text-sm text-gray-300">
+                                <i class="fas fa-history mr-1"></i> Original Input
+                            </div>
+                            <button class="copy-btn bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-1 rounded-md transition-colors" data-target="original-content">
+                                <i class="fas fa-copy mr-1"></i> Copy
+                            </button>
+                        </div>
+                        <pre id="original-content" class="p-4 bg-gray-800 text-gray-100 font-mono text-sm overflow-x-auto rounded-b-lg"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Section -->
+            <div class="mt-16">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Why Use CodeFixer?</h2>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+                        <div class="text-blue-500 text-3xl mb-4">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <h3 class="font-semibold text-lg mb-2">Instant Fixes</h3>
+                        <p class="text-gray-600">Get corrections for your code in seconds, saving you hours of debugging.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+                        <div class="text-blue-500 text-3xl mb-4">
+                            <i class="fas fa-language"></i>
+                        </div>
+                        <h3 class="font-semibold text-lg mb-2">Multi-Language</h3>
+                        <p class="text-gray-600">Supports popular programming languages including JavaScript, Python, Java, and more.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+                        <div class="text-blue-500 text-3xl mb-4">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <h3 class="font-semibold text-lg mb-2">Learn as You Go</h3>
+                        <p class="text-gray-600">Detailed explanations help you understand and avoid similar mistakes in the future.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-16 py-6 border-t border-gray-200 text-center text-gray-500 text-sm">
+            <p>© 2023 CodeFixer. All rights reserved.</p>
+            <p class="mt-2">Made with <i class="fas fa-heart text-red-500"></i> for developers</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Character count
+            const codeInput = document.getElementById('code-input');
+            const charCount = document.getElementById('char-count');
+            
+            codeInput.addEventListener('input', function() {
+                charCount.textContent = this.value.length;
+            });
+
+            // Tab switching
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // Update active tab button
+                    tabButtons.forEach(btn => btn.classList.remove('tab-active'));
+                    this.classList.add('tab-active');
+                    
+                    // Show selected tab content
+                    tabContents.forEach(content => content.classList.add('hidden'));
+                    document.getElementById(tabId).classList.remove('hidden');
+                });
+            });
+
+            // Copy buttons
+            const copyButtons = document.querySelectorAll('.copy-btn');
+            
+            copyButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target');
+                    const targetElement = document.getElementById(targetId);
+                    const textToCopy = targetElement.textContent;
+                    
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        // Visual feedback
+                        const originalText = this.innerHTML;
+                        this.innerHTML = '<i class="fas fa-check mr-1"></i> Copied!';
+                        this.classList.add('copied');
+                        
+                        setTimeout(() => {
+                            this.innerHTML = originalText;
+                            this.classList.remove('copied');
+                        }, 2000);
+                    });
+                });
+            });
+
+            // Analyze button
+            const analyzeBtn = document.getElementById('analyze-btn');
+            const resultsSection = document.getElementById('results-section');
+            
+            analyzeBtn.addEventListener('click', function() {
+                const code = codeInput.value.trim();
+                const language = document.getElementById('language-select').value;
+                
+                if (!code) {
+                    alert('Please enter some code or an error message to analyze.');
+                    return;
+                }
+                
+                // Show loading state
+                this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Analyzing...';
+                this.classList.add('cursor-not-allowed', 'opacity-75');
+                
+                // Simulate API call with timeout
+                setTimeout(() => {
+                    // Show results section
+                    resultsSection.classList.remove('hidden');
+                    
+                    // Set the original content
+                    document.getElementById('original-content').textContent = code;
+                    
+                    // Generate mock fixed code (in a real app, this would come from an API)
+                    let fixedCode = '';
+                    let explanation = '';
+                    
+                    if (language === 'auto' || language === 'javascript') {
+                        fixedCode = `// Fixed JavaScript code\n${code.replace('var ', 'const ').replace(/console\.log/g, '// Removed debug statement')}\n\n// Added proper error handling\ntry {\n    // Your code here\n} catch (error) {\n    console.error('Error:', error);\n}`;
+                        explanation = `<p>We identified several issues in your JavaScript code:</p>
+                            <ul class="list-disc pl-5 mt-2 space-y-2">
+                                <li>Replaced <code>var</code> declarations with <code>const</code> for better scoping</li>
+                                <li>Commented out debug <code>console.log</code> statements</li>
+                                <li>Added proper error handling with try/catch blocks</li>
+                                <li>Improved code formatting for better readability</li>
+                            </ul>
+                            <p class="mt-4">These changes make your code more maintainable and less prone to errors.</p>`;
+                    } else if (language === 'python') {
+                        fixedCode = `# Fixed Python code\n${code.replace(/print\(.*\)/g, '# Debug print removed')}\n\ndef main():\n    try:\n        # Your code here\n    except Exception as e:\n        print(f"Error: {e}")`;
+                        explanation = `<p>We improved your Python code with these changes:</p>
+                            <ul class="list-disc pl-5 mt-2 space-y-2">
+                                <li>Commented out debug print statements</li>
+                                <li>Added proper error handling with try/except</li>
+                                <li>Organized code into a <code>main()</code> function for better structure</li>
+                                <li>Used f-strings for cleaner error message formatting</li>
+                            </ul>`;
+                    } else {
+                        // Generic fix for other languages
+                        fixedCode = `/* Fixed code */\n${code}\n\n/* Added error handling and improved formatting */`;
+                        explanation = `<p>We analyzed your code and made these improvements:</p>
+                            <ul class="list-disc pl-5 mt-2 space-y-2">
+                                <li>Improved code formatting and indentation</li>
+                                <li>Added comments to explain complex sections</li>
+                                <li>Identified potential error-prone areas</li>
+                                <li>Suggested best practices for the language</li>
+                            </ul>`;
+                    }
+                    
+                    // Set the fixed code and explanation
+                    document.getElementById('fixed-code-content').textContent = fixedCode;
+                    document.getElementById('explanation-content').innerHTML = explanation;
+                    
+                    // Reset button state
+                    this.innerHTML = '<i class="fas fa-magic mr-2"></i> Analyze & Fix';
+                    this.classList.remove('cursor-not-allowed', 'opacity-75');
+                    
+                    // Scroll to results
+                    resultsSection.scrollIntoView({ behavior: 'smooth' });
+                }, 1500);
+            });
+        });
+    </script>
+</body>
+</html>
